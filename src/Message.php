@@ -180,14 +180,14 @@ class Message extends Message\Part {
 	 */
 	public function getExtendedHeaders() {
 		if (null === $this->extendedHeaders) {
-			$headers = array();
+			$headers = new \StdClass;
 			$message_number = imap_msgno($this->stream, $this->messageNumber);
 			$fullHeadersList = explode("\n", imap_fetchheader($this->stream, $message_number));
 
 			if (is_array($fullHeadersList) && count($fullHeadersList)) {
 				foreach ($fullHeadersList as $line) {
-					if (eregi("^X-", $line)) {
-						eregi("^([^:]*): (.*)", $line, $arg);
+					if (preg_match("/^X-/i", $line)) {
+						preg_match("/^([^:]*): (.*)/i", $line, $arg);
 						$headers->$arg[1] = $arg[2];
 					}
 				}
