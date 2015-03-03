@@ -184,8 +184,8 @@ class Message extends Message\Part {
 			$message_number = imap_msgno($this->stream, $this->messageNumber);
 			$fullHeadersList = explode("\n", imap_fetchheader($this->stream, $message_number));
 
-			if (is_array($fullHeader) && count($fullHeader)) {
-				foreach ($fullHeader as $line) {
+			if (is_array($fullHeadersList) && count($fullHeadersList)) {
+				foreach ($fullHeadersList as $line) {
 					if (eregi("^X-", $line)) {
 						eregi("^([^:]*): (.*)", $line, $arg);
 						$headers->$arg[1] = $arg[2];
