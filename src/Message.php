@@ -12,8 +12,9 @@ use Ddeboer\Imap\Exception\MessageMoveException;
  */
 class Message extends Message\Part
 {
-    private $headers;
-    private $attachments;
+	private $headers;
+	private $extendedHeaders:
+	private $attachments;
 
     /**
      * @var boolean
@@ -28,10 +29,10 @@ class Message extends Message\Part
      */
     public function __construct($stream, $messageNumber)
     {
-        $this->stream = $stream;
-        $this->messageNumber = $messageNumber;
+    	$this->stream = $stream;
+    	$this->messageNumber = $messageNumber;
 
-        $this->loadStructure();
+    	$this->loadStructure();
     }
 
     /**
@@ -43,7 +44,7 @@ class Message extends Message\Part
      */
     public function getId()
     {
-        return $this->getHeaders()->get('message_id');
+    	return $this->getHeaders()->get('message_id');
     }
 
     /**
@@ -53,7 +54,7 @@ class Message extends Message\Part
      */
     public function getFrom()
     {
-        return $this->getHeaders()->get('from');
+    	return $this->getHeaders()->get('from');
     }
 
     /**
@@ -63,7 +64,7 @@ class Message extends Message\Part
      */
     public function getTo()
     {
-        return $this->getHeaders()->get('to') ?: [];
+    	return $this->getHeaders()->get('to') ?: [];
     }
 
     /**
@@ -73,7 +74,7 @@ class Message extends Message\Part
      */
     public function getCc()
     {
-        return $this->getHeaders()->get('cc') ?: [];
+    	return $this->getHeaders()->get('cc') ?: [];
     }
 
     /**
@@ -83,7 +84,7 @@ class Message extends Message\Part
      */
     public function getNumber()
     {
-        return $this->messageNumber;
+    	return $this->messageNumber;
     }
 
     /**
@@ -93,7 +94,7 @@ class Message extends Message\Part
      */
     public function getDate()
     {
-        return $this->getHeaders()->get('date');
+    	return $this->getHeaders()->get('date');
     }
 
     /**
@@ -103,7 +104,7 @@ class Message extends Message\Part
      */
     public function getSize()
     {
-        return $this->getHeaders()->get('size');
+    	return $this->getHeaders()->get('size');
     }
 
     /**
@@ -115,9 +116,9 @@ class Message extends Message\Part
     {
         // Null headers, so subsequent calls to getHeaders() will return
         // updated seen flag
-        $this->headers = null;
+    	$this->headers = null;
 
-        return $this->doGetContent($this->keepUnseen);
+    	return $this->doGetContent($this->keepUnseen);
     }
 
     /**
@@ -127,7 +128,7 @@ class Message extends Message\Part
      */
     public function isAnswered()
     {
-        return $this->getHeaders()->get('answered');
+    	return $this->getHeaders()->get('answered');
     }
 
     /**
@@ -137,7 +138,7 @@ class Message extends Message\Part
      */
     public function isDeleted()
     {
-        return $this->getHeaders()->get('deleted');
+    	return $this->getHeaders()->get('deleted');
     }
 
     /**
@@ -147,7 +148,7 @@ class Message extends Message\Part
      */
     public function isDraft()
     {
-        return $this->getHeaders()->get('draft');
+    	return $this->getHeaders()->get('draft');
     }
 
     /**
@@ -157,7 +158,7 @@ class Message extends Message\Part
      */
     public function isSeen()
     {
-        return 'U' != $this->getHeaders()->get('unseen');
+    	return 'U' != $this->getHeaders()->get('unseen');
     }
 
     /**
@@ -167,7 +168,7 @@ class Message extends Message\Part
      */
     public function getSubject()
     {
-        return $this->getHeaders()->get('subject');
+    	return $this->getHeaders()->get('subject');
     }
 
     /**
@@ -177,17 +178,43 @@ class Message extends Message\Part
      */
     public function getHeaders()
     {
-        if (null === $this->headers) {
+    	if (null === $this->headers) {
             // imap_header is much faster than imap_fetchheader
             // imap_header returns only a subset of all mail headers,
             // but it does include the message flags.
-            $headers = imap_header($this->stream, imap_msgno($this->stream, $this->messageNumber));
-            $this->headers = new Message\Headers($headers);
-        }
+    		$headers = imap_header($this->stream, imap_msgno($this->stream, $this->messageNumber));
+    		$this->headers = new Message\Headers($headers);
+    	}
 
-        return $this->headers;
+    	return $this->headers;
     }
 
+    /**
+     * Get message headers
+     *
+     * @return Message\Headers
+     */
+    public function getExtendedHeaders()
+    {
+    	if (null === $this->extendedHeaders) {
+    		$headers = array();
+    		$message_number = imap_msgno($this->stream, $this->messageNumber);
+    		$fullHeadersList = explode("\n", imap_fetchheader($this->stream, $message_number));
+
+    		if (is_array($fullHeader) && count($fullHeader)) {
+    			foreach ($fullHeader as $line) {
+    				if (eregi("^X-", $line)) {
+    					eregi("^([^:]*): (.*)", $line, $arg);
+    					$headers->$arg[1] = $arg[2];
+    				}
+    			}
+    		}
+
+    		$this->extendedHeaders = new Message\Headers($headers);
+    	}
+
+    	return $this->headers;
+    }
     /**
      * Get body HTML
      *
@@ -195,12 +222,12 @@ class Message extends Message\Part
      */
     public function getBodyHtml()
     {
-        $iterator = new \RecursiveIteratorIterator($this, \RecursiveIteratorIterator::SELF_FIRST);
-        foreach ($iterator as $part) {
-            if ($part->getSubtype() == 'HTML') {
-                return $part->getDecodedContent();
-            }
-        }
+    	$iterator = new \RecursiveIteratorIterator($this, \RecursiveIteratorIterator::SELF_FIRST);
+    	foreach ($iterator as $part) {
+    		if ($part->getSubtype() == 'HTML') {
+    			return $part->getDecodedContent();
+    		}
+    	}
     }
 
     /**
@@ -210,15 +237,15 @@ class Message extends Message\Part
      */
     public function getBodyText()
     {
-        $iterator = new \RecursiveIteratorIterator($this, \RecursiveIteratorIterator::SELF_FIRST);
-        foreach ($iterator as $part) {
-            if ($part->getSubtype() == 'PLAIN') {
-                return $part->getDecodedContent();
-            }
-        }
+    	$iterator = new \RecursiveIteratorIterator($this, \RecursiveIteratorIterator::SELF_FIRST);
+    	foreach ($iterator as $part) {
+    		if ($part->getSubtype() == 'PLAIN') {
+    			return $part->getDecodedContent();
+    		}
+    	}
 
         // If message has no parts, return content of message itself.
-        return $this->getDecodedContent();
+    	return $this->getDecodedContent();
     }
 
     /**
@@ -228,22 +255,22 @@ class Message extends Message\Part
      */
     public function getAttachments()
     {
-        if (null === $this->attachments) {
-            foreach ($this->getParts() as $part) {
-                if ($part instanceof Message\Attachment) {
-                    $this->attachments[] = $part;
-                }
-                if ($part->hasChildren()) {
-                    foreach ($part->getParts() as $child_part) {
-                        if ($child_part instanceof Message\Attachment) {
-                            $this->attachments[] = $child_part;
-                        }
-                    }
-                }
-            }
-        }
+    	if (null === $this->attachments) {
+    		foreach ($this->getParts() as $part) {
+    			if ($part instanceof Message\Attachment) {
+    				$this->attachments[] = $part;
+    			}
+    			if ($part->hasChildren()) {
+    				foreach ($part->getParts() as $child_part) {
+    					if ($child_part instanceof Message\Attachment) {
+    						$this->attachments[] = $child_part;
+    					}
+    				}
+    			}
+    		}
+    	}
 
-        return $this->attachments;
+    	return $this->attachments;
     }
 
     /**
@@ -253,7 +280,7 @@ class Message extends Message\Part
      */
     public function hasAttachments()
     {
-        return count($this->getAttachments()) > 0;
+    	return count($this->getAttachments()) > 0;
     }
 
     /**
@@ -264,11 +291,11 @@ class Message extends Message\Part
     public function delete()
     {
         // 'deleted' header changed, force to reload headers, would be better to set deleted flag to true on header
-        $this->headers = null;
+    	$this->headers = null;
 
-        if (!imap_delete($this->stream, $this->messageNumber, \FT_UID)) {
-            throw new MessageDeleteException($this->messageNumber);
-        }
+    	if (!imap_delete($this->stream, $this->messageNumber, \FT_UID)) {
+    		throw new MessageDeleteException($this->messageNumber);
+    	}
     }
 
     /**
@@ -280,11 +307,11 @@ class Message extends Message\Part
      */
     public function move(Mailbox $mailbox)
     {
-        if (!imap_mail_move($this->stream, $this->messageNumber, $mailbox->getName(), \CP_UID)) {
-            throw new MessageMoveException($this->messageNumber, $mailbox->getName());
-        }
+    	if (!imap_mail_move($this->stream, $this->messageNumber, $mailbox->getName(), \CP_UID)) {
+    		throw new MessageMoveException($this->messageNumber, $mailbox->getName());
+    	}
 
-        return $this;
+    	return $this;
     }
 
     /**
@@ -298,9 +325,9 @@ class Message extends Message\Part
      */
     public function keepUnseen($bool = true)
     {
-        $this->keepUnseen = (bool) $bool;
+    	$this->keepUnseen = (bool) $bool;
 
-        return $this;
+    	return $this;
     }
 
     /**
@@ -308,23 +335,23 @@ class Message extends Message\Part
      */
     private function loadStructure()
     {
-        set_error_handler(
-            function ($nr, $error) {
-                throw new MessageDoesNotExistException(
-                    $this->messageNumber,
-                    $error
-                );
-            }
-        );
-        
-        $structure = imap_fetchstructure(
-            $this->stream,
-            $this->messageNumber,
-            \FT_UID
-        );
-        
-        restore_error_handler();
-        
-        $this->parseStructure($structure);
+    	set_error_handler(
+    		function ($nr, $error) {
+    			throw new MessageDoesNotExistException(
+    				$this->messageNumber,
+    				$error
+    				);
+    		}
+    		);
+
+    	$structure = imap_fetchstructure(
+    		$this->stream,
+    		$this->messageNumber,
+    		\FT_UID
+    		);
+
+    	restore_error_handler();
+
+    	$this->parseStructure($structure);
     }
 }
